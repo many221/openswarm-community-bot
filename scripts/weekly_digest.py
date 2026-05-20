@@ -12,9 +12,11 @@ from jinja2 import Template
 REPO = "openswarm-ai/openswarm"
 SHOWCASE_PATH = "scripts/community_showcase.json"
 TEMPLATE_PATH = "scripts/email_template.html"
+PREVIEW_PATH = "digest_preview.html"
 MODEL = "claude-sonnet-4-6"
 FROM_ADDRESS = "Manny from OpenSwarm <manny@ink.openswarm.com>"
 FIRST_EMAIL_SUBJECT = "Building the operating system of the future, together"
+DRY_RUN = os.environ.get("DRY_RUN", "").lower() == "true"
 
 
 def gh_get(url: str) -> dict | list:
@@ -198,6 +200,16 @@ def main() -> int:
     showcase = load_showcase()
     content = build_content(commits, diff_blob, showcase)
     html = render_email(content)
+
+    if DRY_RUN:
+        with open(PREVIEW_PATH, "w") as f:
+            f.write(html)
+        print("DRY_RUN: skipped Resend, wrote rendered HTML to", PREVIEW_PATH)
+        print(f"  subject:   {content['subject']!r}")
+        print(f"  preheader: {content.get('preheader', '')!r}")
+        print(f"  word count: ~{sum(len(str(v).split()) for v in content.values() if v)}")
+        return 0
+
     broadcast_id = send_via_resend(
         content["subject"], html, content.get("preheader", "")
     )

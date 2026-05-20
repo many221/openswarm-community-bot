@@ -6,6 +6,11 @@ on:
     # During PDT (summer) this fires at 6:00am PT; adjust if needed.
     - cron: '0 14 * * 1'
   workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Render the email and upload as an artifact instead of sending via Resend'
+        type: boolean
+        default: false
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -30,4 +35,13 @@ jobs:
           RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
           RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DRY_RUN: ${{ inputs.dry_run }}
         run: python scripts/weekly_digest.py
+
+      - name: Upload rendered preview
+        if: ${{ inputs.dry_run == true }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: digest-preview
+          path: digest_preview.html
+          if-no-files-found: error
