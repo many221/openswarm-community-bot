@@ -3,7 +3,7 @@
 Two scheduled GitHub Actions that watch the public [openswarm-ai/openswarm](https://github.com/openswarm-ai/openswarm) repo and keep the community in the loop:
 
 - **Discord poller** — every 15 minutes, summarizes new commits with Claude Haiku and posts to a Discord webhook.
-- **Weekly email digest** — every Monday at 7am PT, drafts a community newsletter with Claude Sonnet and sends it via Resend Broadcasts.
+- **Weekly email digest** — every Wednesday at 8am PT, drafts a community newsletter with Claude Sonnet and sends it via Resend Broadcasts.
 
 This repo does not need any permissions on the upstream repo. It only reads the public commits API.
 
@@ -28,7 +28,7 @@ The first Discord poll seeds the cached SHA without notifying, so you will not s
 ```
 .github/workflows/
   discord-poll.yml          # cron */15 * * * *
-  weekly-email-digest.yml   # cron 0 14 * * 1 (Monday 14:00 UTC)
+  weekly-email-digest.yml   # cron 0 16 * * 3 (Wednesday 16:00 UTC)
 scripts/
   discord_notify.py         # poll → summarize → post to Discord
   weekly_digest.py          # collect week → Sonnet → render → Resend
@@ -63,7 +63,7 @@ The `first_email` flag is set to `true` initially. The very first weekly run use
 
 ## Time zone note
 
-The weekly cron is set to `0 14 * * 1` (14:00 UTC Monday), which is 7am PT during PST. During PDT (mid-March through early November) it fires at 6am PT. Adjust if you want exact 7am PT year-round.
+The weekly cron is set to `0 16 * * 3` (16:00 UTC Wednesday), which is 8am PT during PST. During PDT (mid-March through early November) it fires at 9am PT. Adjust if you want exact 8am PT year-round.
 
 ## Rate limits
 

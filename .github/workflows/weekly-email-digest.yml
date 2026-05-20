@@ -2,9 +2,9 @@ name: Weekly email digest
 
 on:
   schedule:
-    # 14:00 UTC Monday = 7:00am PT during PST (winter)
-    # During PDT (summer) this fires at 6:00am PT; adjust if needed.
-    - cron: '0 14 * * 1'
+    # 16:00 UTC Wednesday = 8:00am PT during PST (winter)
+    # During PDT (summer) this fires at 9:00am PT; adjust if needed.
+    - cron: '0 16 * * 3'
   workflow_dispatch:
     inputs:
       dry_run:
