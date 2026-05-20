@@ -9,6 +9,7 @@ import requests
 REPO = "openswarm-ai/openswarm"
 SHA_FILE = "last_sha.txt"
 MODEL = "claude-haiku-4-5-20251001"
+FORCE_TEST = os.environ.get("FORCE_TEST", "").lower() == "true"
 
 
 def gh_get(url: str) -> dict | list:
@@ -74,16 +75,22 @@ def main() -> int:
         return 0
 
     latest = commits[0]["sha"]
-    last = read_last_sha()
 
-    if last is None:
-        print(f"First run — seeding cache with {latest}, no notification sent.")
-        write_last_sha(latest)
-        return 0
-
-    if last == latest:
-        print(f"No new commits since {last[:7]}.")
-        return 0
+    if FORCE_TEST:
+        if len(commits) < 2:
+            print("FORCE_TEST: upstream has fewer than 2 commits, nothing to compare.")
+            return 0
+        last = commits[1]["sha"]
+        print(f"FORCE_TEST: using {last[:7]} as a fake 'last seen' SHA (cache not touched).")
+    else:
+        last = read_last_sha()
+        if last is None:
+            print(f"First run — seeding cache with {latest}, no notification sent.")
+            write_last_sha(latest)
+            return 0
+        if last == latest:
+            print(f"No new commits since {last[:7]}.")
+            return 0
 
     compare = gh_get(f"https://api.github.com/repos/{REPO}/compare/{last}...{latest}")
     new_commits = compare.get("commits", [])
@@ -103,9 +110,15 @@ def main() -> int:
 
     text = summarize(messages, diff_blob)
     compare_url = compare.get("html_url", f"https://github.com/{REPO}/commit/{latest}")
+    if FORCE_TEST:
+        text = f"[TEST] {text}"
     post_to_discord(text, compare_url)
-    write_last_sha(latest)
-    print(f"Posted update covering {len(new_commits)} new commit(s).")
+    if not FORCE_TEST:
+        write_last_sha(latest)
+    print(
+        f"{'FORCE_TEST: ' if FORCE_TEST else ''}"
+        f"Posted update covering {len(new_commits)} new commit(s)."
+    )
     return 0
 
 
