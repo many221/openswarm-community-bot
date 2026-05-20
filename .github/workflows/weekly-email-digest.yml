@@ -11,6 +11,10 @@ on:
         description: 'Render only and upload the artifact, skip the approval gate and send'
         type: boolean
         default: false
+      feedback:
+        description: 'Optional reviewer feedback to apply on re-render (e.g. "shorter greeting, mention Pixelpus, drop the spotlight")'
+        type: string
+        default: ''
 
 env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
@@ -34,6 +38,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           MODE: render
+          FEEDBACK: ${{ inputs.feedback }}
         run: python scripts/weekly_digest.py
 
       - name: Upload rendered preview

@@ -19,6 +19,7 @@ FROM_ADDRESS = "Manny from OpenSwarm <manny@ink.openswarm.com>"
 FIRST_EMAIL_SUBJECT = "Building the operating system of the future, together"
 DRY_RUN = os.environ.get("DRY_RUN", "").lower() == "true"
 MODE = os.environ.get("MODE", "").lower()  # "render", "send", or "" (one-shot)
+FEEDBACK = os.environ.get("FEEDBACK", "").strip()
 
 
 def gh_get(url: str) -> dict | list:
@@ -85,6 +86,14 @@ def build_content(commits: list[dict], diff_summary: str, showcase: dict) -> dic
             "and frame these weekly updates as a commitment to transparency."
         )
 
+    feedback_note = ""
+    if FEEDBACK:
+        feedback_note = (
+            "\n\nREVIEWER FEEDBACK (apply these adjustments to this draft, "
+            "they override conflicting voice rules if necessary):\n"
+            f"{FEEDBACK}"
+        )
+
     prompt = f"""You are Manny from OpenSwarm. Write the weekly update email for the community.
 
 Return ONLY valid JSON, no prose around it, with this exact shape:
@@ -103,7 +112,7 @@ Voice rules:
 - 320-400 words total across all fields combined (the greeting must stay under 35 words; spend the rest on shipped/spotlight/shoutouts/cta)
 - No corporate speak, no jargon (no 'refactor', 'PR', 'commit', 'endpoint', 'API', 'async')
 - No em-dashes anywhere
-- Plain English a non-developer would understand{first_email_note}
+- Plain English a non-developer would understand{first_email_note}{feedback_note}
 
 Commits this week:
 {messages}
