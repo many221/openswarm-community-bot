@@ -1,0 +1,47 @@
+name: Discord commit notifier
+
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: discord-poll
+  cancel-in-progress: false
+
+jobs:
+  poll:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install anthropic==0.* requests
+
+      - name: Restore last-seen SHA
+        uses: actions/cache/restore@v4
+        with:
+          path: last_sha.txt
+          key: last-commit-sha-${{ github.run_id }}
+          restore-keys: |
+            last-commit-sha-
+
+      - name: Poll and notify
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: python scripts/discord_notify.py
+
+      - name: Save last-seen SHA
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: last_sha.txt
+          key: last-commit-sha-${{ github.run_id }}
