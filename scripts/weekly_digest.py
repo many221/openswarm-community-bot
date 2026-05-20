@@ -89,7 +89,7 @@ Return ONLY valid JSON, no prose around it, with this exact shape:
 {{
   "subject": "string — short, specific, intriguing (never 'Weekly Update')",
   "preheader": "string — one sentence preview text shown in the inbox",
-  "greeting": "string — 1-2 sentence warm opener that reads like a friend, not a company",
+  "greeting": "string — ONE OR TWO short sentences, 22-35 words total, that hooks the reader like a friend sharing good news. This is the editorial lead, so keep it tight.",
   "shipped": ["3 to 5 plain-English bullets; lead each with what the reader can DO now"],
   "spotlight": "string OR null — Mamdani-style 'you told us X was broken, so we fixed it', drawn from the community showcase data. Use null if the showcase has no entries.",
   "shoutouts": "string — name the contributors below in a natural sentence or two",
@@ -98,7 +98,7 @@ Return ONLY valid JSON, no prose around it, with this exact shape:
 }}
 
 Voice rules:
-- 350-450 words total across all fields combined
+- 320-400 words total across all fields combined (the greeting must stay under 35 words; spend the rest on shipped/spotlight/shoutouts/cta)
 - No corporate speak, no jargon (no 'refactor', 'PR', 'commit', 'endpoint', 'API', 'async')
 - No em-dashes anywhere
 - Plain English a non-developer would understand{first_email_note}
