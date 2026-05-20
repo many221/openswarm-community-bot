@@ -9,7 +9,13 @@ import requests
 REPO = "openswarm-ai/openswarm"
 SHA_FILE = "last_sha.txt"
 MODEL = "claude-haiku-4-5-20251001"
+BOT_NAME = "Inki"
+INTRO_MESSAGE = (
+    "Hi, I'm Inki. I'll be keeping you updated with any and all "
+    "OpenSwarm software updates."
+)
 FORCE_TEST = os.environ.get("FORCE_TEST", "").lower() == "true"
+SEND_INTRO = os.environ.get("SEND_INTRO", "").lower() == "true"
 
 
 def gh_get(url: str) -> dict | list:
@@ -61,14 +67,20 @@ Code changes (truncated):
     return resp.content[0].text.strip()
 
 
-def post_to_discord(text: str, compare_url: str) -> None:
+def post_to_discord(text: str, compare_url: str | None = None) -> None:
     webhook = os.environ["DISCORD_WEBHOOK_URL"].strip()
-    body = {"content": f"{text}\n\n{compare_url}"}
+    content = f"{text}\n\n{compare_url}" if compare_url else text
+    body = {"content": content, "username": BOT_NAME}
     r = requests.post(webhook, json=body, timeout=30)
     r.raise_for_status()
 
 
 def main() -> int:
+    if SEND_INTRO:
+        post_to_discord(INTRO_MESSAGE)
+        print("Sent intro message as Inki.")
+        return 0
+
     commits = gh_get(f"https://api.github.com/repos/{REPO}/commits?per_page=10")
     if not commits:
         print("No commits returned from GitHub.")

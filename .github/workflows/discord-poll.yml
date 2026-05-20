@@ -9,6 +9,10 @@ on:
         description: 'Post a test summary of the most recent upstream commit without touching cached state'
         type: boolean
         default: false
+      send_intro:
+        description: "Post Inki's one-time intro message to the channel (skips poll)"
+        type: boolean
+        default: false
 
 concurrency:
   group: discord-poll
@@ -46,6 +50,7 @@ jobs:
           DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           FORCE_TEST: ${{ inputs.force_test }}
+          SEND_INTRO: ${{ inputs.send_intro }}
         run: python scripts/discord_notify.py
 
       - name: Save last-seen SHA
