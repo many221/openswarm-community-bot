@@ -5,9 +5,7 @@ import os
 import sys
 from datetime import datetime, timedelta, timezone
 
-import anthropic
 import requests
-from jinja2 import Template
 
 REPO = "openswarm-ai/openswarm"
 SHOWCASE_PATH = "scripts/community_showcase.json"
@@ -126,6 +124,7 @@ Community showcase data (use for spotlight; if 'spotlights' array is empty or mi
 Contributors to shout out: {', '.join(contributors) if contributors else '(none)'}
 """
 
+    import anthropic
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"].strip())
     resp = client.messages.create(
         model=MODEL,
@@ -140,6 +139,7 @@ Contributors to shout out: {', '.join(contributors) if contributors else '(none)
 
 
 def render_email(content: dict) -> str:
+    from jinja2 import Template
     with open(TEMPLATE_PATH) as f:
         tmpl = Template(f.read())
     return tmpl.render(**content)
