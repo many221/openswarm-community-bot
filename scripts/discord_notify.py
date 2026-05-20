@@ -36,7 +36,7 @@ def write_last_sha(sha: str) -> None:
 
 
 def summarize(commit_messages: str, diff_blob: str) -> str:
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"].strip())
     prompt = f"""Write a short Discord update (2-4 sentences) about what changed in the OpenSwarm project this round.
 
 Rules:
@@ -62,7 +62,7 @@ Code changes (truncated):
 
 
 def post_to_discord(text: str, compare_url: str) -> None:
-    webhook = os.environ["DISCORD_WEBHOOK_URL"]
+    webhook = os.environ["DISCORD_WEBHOOK_URL"].strip()
     body = {"content": f"{text}\n\n{compare_url}"}
     r = requests.post(webhook, json=body, timeout=30)
     r.raise_for_status()

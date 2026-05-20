@@ -113,7 +113,7 @@ Community showcase data (use for spotlight; if 'spotlights' array is empty or mi
 Contributors to shout out: {', '.join(contributors) if contributors else '(none)'}
 """
 
-    client = anthropic.Anthropic()
+    client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"].strip())
     resp = client.messages.create(
         model=MODEL,
         max_tokens=2000,
@@ -133,8 +133,8 @@ def render_email(content: dict) -> str:
 
 
 def send_via_resend(subject: str, html: str, preheader: str) -> str:
-    api_key = os.environ["RESEND_API_KEY"]
-    audience_id = os.environ["RESEND_AUDIENCE_ID"]
+    api_key = os.environ["RESEND_API_KEY"].strip()
+    audience_id = os.environ["RESEND_AUDIENCE_ID"].strip()
     headers = {
         "Authorization": f"Bearer {api_key}",
         "Content-Type": "application/json",
