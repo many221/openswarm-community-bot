@@ -9,6 +9,9 @@ concurrency:
   group: discord-poll
   cancel-in-progress: false
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
+
 jobs:
   poll:
     runs-on: ubuntu-latest
