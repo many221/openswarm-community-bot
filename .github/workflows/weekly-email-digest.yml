@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Render the email and upload as an artifact instead of sending via Resend'
+        description: 'Render only and upload the artifact, skip the approval gate and send'
         type: boolean
         default: false
 
@@ -16,7 +16,7 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: 'true'
 
 jobs:
-  digest:
+  prepare:
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -29,19 +29,46 @@ jobs:
 
       - run: pip install anthropic==0.* requests jinja2
 
-      - name: Build and send weekly digest
+      - name: Render the email
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
-          RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          DRY_RUN: ${{ inputs.dry_run }}
+          MODE: render
         run: python scripts/weekly_digest.py
 
       - name: Upload rendered preview
-        if: ${{ inputs.dry_run == true }}
         uses: actions/upload-artifact@v4
         with:
-          name: digest-preview
-          path: digest_preview.html
+          name: digest-${{ github.run_id }}
+          path: |
+            digest_preview.html
+            digest_meta.json
           if-no-files-found: error
+
+  send:
+    needs: prepare
+    if: ${{ inputs.dry_run != true }}
+    runs-on: ubuntu-latest
+    environment: email-send
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - run: pip install requests
+
+      - name: Download approved render
+        uses: actions/download-artifact@v4
+        with:
+          name: digest-${{ github.run_id }}
+
+      - name: Send via Resend
+        env:
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+          RESEND_AUDIENCE_ID: ${{ secrets.RESEND_AUDIENCE_ID }}
+          MODE: send
+        run: python scripts/weekly_digest.py

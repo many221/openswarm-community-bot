@@ -13,10 +13,12 @@ REPO = "openswarm-ai/openswarm"
 SHOWCASE_PATH = "scripts/community_showcase.json"
 TEMPLATE_PATH = "scripts/email_template.html"
 PREVIEW_PATH = "digest_preview.html"
+META_PATH = "digest_meta.json"
 MODEL = "claude-sonnet-4-6"
 FROM_ADDRESS = "Manny from OpenSwarm <manny@ink.openswarm.com>"
 FIRST_EMAIL_SUBJECT = "Building the operating system of the future, together"
 DRY_RUN = os.environ.get("DRY_RUN", "").lower() == "true"
+MODE = os.environ.get("MODE", "").lower()  # "render", "send", or "" (one-shot)
 
 
 def gh_get(url: str) -> dict | list:
@@ -179,11 +181,12 @@ def clear_first_email_flag() -> None:
     print("Cleared first_email flag in community_showcase.json (commit manually if you want it persisted).")
 
 
-def main() -> int:
+def render_and_save() -> dict | None:
+    """Build the email content, render the HTML, and persist preview + meta files."""
     commits = commits_past_week()
     if not commits:
         print("No commits in the past 7 days; skipping digest.")
-        return 0
+        return None
 
     new_sha = commits[0]["sha"]
     old_sha = commits[-1]["sha"]
@@ -201,20 +204,52 @@ def main() -> int:
     content = build_content(commits, diff_blob, showcase)
     html = render_email(content)
 
-    if DRY_RUN:
-        with open(PREVIEW_PATH, "w") as f:
-            f.write(html)
-        print("DRY_RUN: skipped Resend, wrote rendered HTML to", PREVIEW_PATH)
-        print(f"  subject:   {content['subject']!r}")
-        print(f"  preheader: {content.get('preheader', '')!r}")
-        print(f"  word count: ~{sum(len(str(v).split()) for v in content.values() if v)}")
+    with open(PREVIEW_PATH, "w") as f:
+        f.write(html)
+    meta = {
+        "subject": content["subject"],
+        "preheader": content.get("preheader", ""),
+    }
+    with open(META_PATH, "w") as f:
+        json.dump(meta, f, indent=2)
+        f.write("\n")
+
+    print(f"Rendered email to {PREVIEW_PATH} / {META_PATH}")
+    print(f"  subject:   {content['subject']!r}")
+    print(f"  preheader: {meta['preheader']!r}")
+    print(f"  word count: ~{sum(len(str(v).split()) for v in content.values() if v)}")
+    return content
+
+
+def send_from_artifact() -> str:
+    """Load the previously rendered HTML + meta and send via Resend."""
+    with open(PREVIEW_PATH) as f:
+        html = f.read()
+    with open(META_PATH) as f:
+        meta = json.load(f)
+    broadcast_id = send_via_resend(meta["subject"], html, meta.get("preheader", ""))
+    print(f"Sent broadcast {broadcast_id}: {meta['subject']!r}")
+    return broadcast_id
+
+
+def main() -> int:
+    if MODE == "render":
+        render_and_save()
         return 0
 
-    broadcast_id = send_via_resend(
-        content["subject"], html, content.get("preheader", "")
-    )
-    print(f"Sent broadcast {broadcast_id}: {content['subject']!r}")
+    if MODE == "send":
+        send_from_artifact()
+        clear_first_email_flag()
+        return 0
 
+    # One-shot mode (manual run with no MODE set): render, then send unless DRY_RUN
+    content = render_and_save()
+    if content is None:
+        return 0
+    if DRY_RUN:
+        print("DRY_RUN: skipped Resend.")
+        return 0
+    send_from_artifact()
     clear_first_email_flag()
     return 0
 
