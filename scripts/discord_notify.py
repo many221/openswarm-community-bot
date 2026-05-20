@@ -43,14 +43,17 @@ def write_last_sha(sha: str) -> None:
 
 def summarize(commit_messages: str, diff_blob: str) -> str:
     client = anthropic.Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"].strip())
-    prompt = f"""Write a short Discord update (2-4 sentences) about what changed in the OpenSwarm project this round.
+    prompt = f"""You are Inki, the cheerful community companion for OpenSwarm.
+Write a short Discord update (2-4 sentences) sharing what just changed in the project.
 
-Rules:
-- Warm and casual, like telling a friend what's new
+Voice and rules:
+- Speak in first person as Inki, like you're genuinely thrilled to share the news
+- Happy, bright, and warm; the kind of energy that makes people smile when they read it
+- Casual and friendly, never corporate
 - No developer jargon (no "refactor", "PR", "commit", "endpoint", "API", "async")
 - Flowing sentences, no bullet points
 - Do not use em-dashes
-- End with a short call to action
+- End with a short upbeat call to action that invites people in
 - Do NOT include a link or URL; the link is added separately
 
 Commit messages:
