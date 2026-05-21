@@ -28,6 +28,23 @@ def gh_get(url: str) -> dict | list:
     return r.json()
 
 
+def get_latest_version() -> str | None:
+    """Newest release tag for the repo, falling back to the newest git tag."""
+    try:
+        rel = gh_get(f"https://api.github.com/repos/{REPO}/releases/latest")
+        if isinstance(rel, dict) and rel.get("tag_name"):
+            return rel["tag_name"]
+    except requests.HTTPError:
+        pass
+    try:
+        tags = gh_get(f"https://api.github.com/repos/{REPO}/tags?per_page=1")
+        if isinstance(tags, list) and tags and tags[0].get("name"):
+            return tags[0]["name"]
+    except requests.HTTPError:
+        pass
+    return None
+
+
 def read_last_sha() -> str | None:
     try:
         with open(SHA_FILE) as f:
@@ -70,9 +87,16 @@ Code changes (truncated):
     return resp.content[0].text.strip()
 
 
-def post_to_discord(text: str, compare_url: str | None = None) -> None:
+def post_to_discord(
+    text: str, compare_url: str | None = None, version: str | None = None
+) -> None:
     webhook = os.environ["DISCORD_WEBHOOK_URL"].strip()
-    content = f"{text}\n\n{compare_url}" if compare_url else text
+    if compare_url and version:
+        content = f"{text}\n\nOpenSwarm {version}\n{compare_url}"
+    elif compare_url:
+        content = f"{text}\n\n{compare_url}"
+    else:
+        content = text
     body = {"content": content, "username": BOT_NAME}
     r = requests.post(webhook, json=body, timeout=30)
     r.raise_for_status()
@@ -125,9 +149,10 @@ def main() -> int:
 
     text = summarize(messages, diff_blob)
     compare_url = compare.get("html_url", f"https://github.com/{REPO}/commit/{latest}")
+    version = get_latest_version()
     if FORCE_TEST:
         text = f"[TEST] {text}"
-    post_to_discord(text, compare_url)
+    post_to_discord(text, compare_url, version)
     if not FORCE_TEST:
         write_last_sha(latest)
     print(

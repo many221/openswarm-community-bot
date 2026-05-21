@@ -41,6 +41,23 @@ def fetch_compare(old_sha: str, new_sha: str) -> dict:
     return gh_get(f"https://api.github.com/repos/{REPO}/compare/{old_sha}...{new_sha}")
 
 
+def get_latest_version() -> str:
+    """Newest release tag, falling back to the newest git tag, or '' if neither."""
+    try:
+        rel = gh_get(f"https://api.github.com/repos/{REPO}/releases/latest")
+        if isinstance(rel, dict) and rel.get("tag_name"):
+            return rel["tag_name"]
+    except requests.HTTPError:
+        pass
+    try:
+        tags = gh_get(f"https://api.github.com/repos/{REPO}/tags?per_page=1")
+        if isinstance(tags, list) and tags and tags[0].get("name"):
+            return tags[0]["name"]
+    except requests.HTTPError:
+        pass
+    return ""
+
+
 def load_showcase() -> dict:
     try:
         with open(SHOWCASE_PATH) as f:
@@ -211,6 +228,7 @@ def render_and_save() -> dict | None:
 
     showcase = load_showcase()
     content = build_content(commits, diff_blob, showcase)
+    content["version"] = get_latest_version()
     html = render_email(content)
 
     with open(PREVIEW_PATH, "w") as f:
